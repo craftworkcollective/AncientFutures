@@ -4,13 +4,22 @@
 #endif
 
 #define PIN 6
-#define BRIGHTNESS 255  // Set BRIGHTNESS to about 1/5 (max = 255)
+#define LEDS_PER_STRIP 60  // Number of LEDs in each ring
+#define NUM_RINGS 5       // Total number of rings
+#define BRIGHTNESS 50     // Set BRIGHTNESS to about 1/5 (max = 255)
 
 // Calculate the total number of LEDs
-#define TOTAL_LED_COUNT 6
+#define TOTAL_LED_COUNT (LEDS_PER_STRIP * NUM_RINGS)
 
 // Declare our NeoPixel strip object
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(TOTAL_LED_COUNT, PIN, NEO_RGBW + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(TOTAL_LED_COUNT, PIN, NEO_GRB + NEO_KHZ800);
+
+// Serial
+String inputString = "";      // a String to hold incoming data
+bool stringComplete = false;  // whether the string is complete
+
+// Volume serial
+int volume = 0;
 
 // Color storage
 uint8_t start_r = 0;
@@ -19,59 +28,36 @@ uint8_t start_b = 0;
 bool onTransition = false;
 int rgb[6] = { 0, 0, 0, 0, 0, 0 };
 
-// Define a set of 100 colors
-const uint32_t colorSet[100] = {
-  0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFFFFF, 0xC0C0C0, 0x808080, 0x800000,
-  0x808000, 0x008000, 0x800080, 0x008080, 0x000080, 0xFFA500, 0xA52A2A, 0xDEB887, 0x5F9EA0, 0x7FFF00,
-  0xD2691E, 0xFF7F50, 0x6495ED, 0xFFF8DC, 0xDC143C, 0x00FFFF, 0x00008B, 0x008B8B, 0xB8860B, 0xA9A9A9,
-  0x006400, 0xBDB76B, 0x8B008B, 0x556B2F, 0xFF8C00, 0x9932CC, 0x8B0000, 0xE9967A, 0x8FBC8F, 0x483D8B,
-  0x2F4F4F, 0x00CED1, 0x9400D3, 0xFF1493, 0x00BFFF, 0x696969, 0x1E90FF, 0xB22222, 0xFFFAF0, 0x228B22,
-  0xFF00FF, 0xDCDCDC, 0xF8F8FF, 0xFFD700, 0xDAA520, 0x808080, 0x008000, 0xADFF2F, 0xF0FFF0, 0xFF69B4,
-  0xCD5C5C, 0x4B0082, 0xFFFFF0, 0xF0E68C, 0xE6E6FA, 0xFFF0F5, 0x7CFC00, 0xFFFACD, 0xADD8E6, 0xF08080,
-  0xE0FFFF, 0xFAFAD2, 0xD3D3D3, 0x90EE90, 0xFFB6C1, 0xFFA07A, 0x20B2AA, 0x87CEFA, 0x778899, 0xB0C4DE,
-  0xFFFFE0, 0x00FF00, 0x32CD32, 0xFAF0E6, 0xFF00FF, 0x800000, 0x66CDAA, 0x0000CD, 0xBA55D3, 0x9370DB,
-  0x3CB371, 0x7B68EE, 0x00FA9A, 0x48D1CC, 0xC71585, 0x191970, 0xF5FFFA, 0xFFE4E1, 0xFFE4B5, 0xFFDEAD
-};
-
 enum AnimationState {
   IDLE,
-  SINGLE_COLOR_TO_GRADIENT,
+  ANALYZING,
+  TRANSITION_TO_SENTIMENT,
   ANIMATING,
+  SINGLE_COLOR_TO_GRADIENT,
+  NO_ANIMATION,
   TRANSITION_TO_ATTRACT
 };
 
 AnimationState currentState = IDLE;
-unsigned long stateStartTime = 0;
 
 void setup() {
+  Serial.begin(9600);
+  inputString.reserve(200);
 
   strip.begin();  // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();   // Turn OFF all pixels ASAP
   strip.setBrightness(BRIGHTNESS);
   pinMode(LED_BUILTIN, OUTPUT);
-
-  randomSeed(analogRead(0));  // Seed the random number generator
-  updateRandomColors();
-  stateStartTime = millis();
 }
 
 void loop() {
-  // 60 seconds 60000
-  if (millis() - stateStartTime >= 60000) {  // Check if 60 seconds have passed
-    updateRandomColors();                    // Update to new random colors
-    moveToNextState();
-    stateStartTime = millis();
-  }
-
   switch (currentState) {
-    case IDLE:
-      pulseBetweenColors(255, 95, 50, 255, 255, 255, 3000);
+    case ANALYZING:
+      theaterChase(strip.Color(255, 255, 255), 500);
       break;
-    case SINGLE_COLOR_TO_GRADIENT:
-      strip.fill(strip.Color(0, 0, 0));
-      strip.show();
-      colorWipe(strip.Color(rgb[0], rgb[1], rgb[2]), 30);
-      currentState = ANIMATING; 
+    case TRANSITION_TO_SENTIMENT:
+      animate_gradient_fill(start_r, start_g, start_b, 255, 255, 255, 1000);
+      currentState = IDLE;
       break;
     case ANIMATING:
       if (onTransition) {
@@ -84,7 +70,18 @@ void loop() {
       break;
     case TRANSITION_TO_ATTRACT:
       animate_gradient_fill(start_r, start_g, start_b, 255, 95, 50, 1000);
-      currentState = IDLE; 
+      currentState = IDLE;
+      break;
+    case IDLE:
+      pulseBetweenColors(255, 95, 50, 255, 255, 255, 3000);
+      break;
+    case SINGLE_COLOR_TO_GRADIENT:
+      strip.fill(strip.Color(0, 0, 0));
+      strip.show();
+      colorWipeBothRows(strip.Color(rgb[0], rgb[1], rgb[2]), 30);
+      currentState = ANIMATING;
+      break;
+    case NO_ANIMATION:
       break;
     default:
       pulseBetweenColors(255, 95, 50, 255, 255, 255, 3000);
@@ -92,36 +89,38 @@ void loop() {
   }
 }
 
-void moveToNextState() {
-  switch (currentState) {
-    case IDLE:
-      currentState = SINGLE_COLOR_TO_GRADIENT;
-      break;
-    case ANIMATING:
-      currentState = TRANSITION_TO_ATTRACT;
-      break;
-    default:
-      break;
+// SerialEvent occurs whenever new data comes in the hardware serial RX.
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    inputString += inChar;
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
   }
 }
 
+void processSerialStateData() {
+  if (stringComplete) {
+    Serial.print(inputString);
 
-void updateRandomColors() {
-  // Select two random colors from the color set
-  uint32_t color1 = colorSet[random(99)];
-  uint32_t color2 = colorSet[random(99)];
+    if (inputString.indexOf('a') >= 0) {
+      currentState = ANALYZING;
+    } else if (inputString.indexOf('s') >= 0) {
+      currentState = TRANSITION_TO_ATTRACT;
+    } else if (inputString.indexOf('g') >= 0) {
+      parseRGBValuesSingleColor(inputString, rgb);
+      currentState = SINGLE_COLOR_TO_GRADIENT;
+    } else {
+      parseRGBValues(inputString, rgb);
+      onTransition = true;
+      currentState = ANIMATING;
+    }
 
-  // Split the first color into its RGB components
-  rgb[0] = (color1 >> 16) & 0xFF;
-  rgb[1] = (color1 >> 8) & 0xFF;
-  rgb[2] = color1 & 0xFF;
-
-  // Split the second color into its RGB components
-  rgb[3] = (color2 >> 16) & 0xFF;
-  rgb[4] = (color2 >> 8) & 0xFF;
-  rgb[5] = color2 & 0xFF;
+    inputString = "";
+    stringComplete = false;
+  }
 }
-
 
 void parseRGBValuesSingleColor(const String& inputString, int rgb[6]) {
   char str[inputString.length() + 1];
@@ -176,6 +175,24 @@ void convertColorToRGB(uint32_t color) {
   start_b = color & 0xFF;
 }
 
+void theaterChase(uint32_t color, int wait) {
+  for (int a = 0; a < 10; a++) {
+    for (int b = 0; b < 3; b++) {
+      strip.clear();
+      for (int c = b; c < strip.numPixels(); c += 3) {
+        strip.setPixelColor(c, color);
+      }
+      strip.show();
+
+
+      serialEvent();
+
+      if (stringComplete) return;
+      delay(wait);
+    }
+  }
+}
+
 void animate_gradient_fill(uint8_t start_r, uint8_t start_g, uint8_t start_b,
                            uint8_t end_r, uint8_t end_g, uint8_t end_b,
                            int duration_ms) {
@@ -184,6 +201,8 @@ void animate_gradient_fill(uint8_t start_r, uint8_t start_g, uint8_t start_b,
   strip.show();
   unsigned long delta = millis() - start;
   while (delta < duration_ms) {
+    serialEvent();
+    if (stringComplete) return;
     float pos = (float)delta / (float)duration_ms;
     uint32_t color = color_gradient(start_r, start_g, start_b, end_r, end_g, end_b, pos);
     strip.fill(color);
@@ -217,4 +236,21 @@ void colorWipe(uint32_t c, uint8_t wait) {
     strip.show();
     delay(wait);
   }
+}
+
+void turnOnNLedOfEachRing(int numLEDs) {
+  // Define the color (e.g., red)
+  uint32_t color = strip.Color(255, 0, 0);
+
+  strip.fill(strip.Color(0, 0, 0));
+  strip.show();
+
+  // Loop through each ring and turn on the first LED
+  for (int i = 0; i < NUM_RINGS; i++) {
+    for (int j = 0; j < numLEDs; j++)
+      strip.setPixelColor(i * LEDS_PER_RING + j, color);
+  }
+
+  // Show the changes on the strip
+  strip.show();
 }

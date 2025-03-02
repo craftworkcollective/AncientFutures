@@ -5,8 +5,8 @@
 
 #define PIN 6
 #define LEDS_PER_RING 16  // Number of LEDs in each ring
-#define NUM_RINGS 18       // Total number of rings
-#define BRIGHTNESS 255    // Set BRIGHTNESS to about 1/5 (max = 255)
+#define NUM_RINGS 2       // Total number of rings
+#define BRIGHTNESS 50     // Set BRIGHTNESS to about 1/5 (max = 255)
 
 // Calculate the total number of LEDs
 #define TOTAL_LED_COUNT (LEDS_PER_RING * NUM_RINGS)
@@ -30,14 +30,9 @@ int rgb[6] = { 0, 0, 0, 0, 0, 0 };
 
 enum AnimationState {
   IDLE,
-  RECORDING_COUNTDOWN,
-  RECORDING,
   ANALYZING,
   TRANSITION_TO_SENTIMENT,
   ANIMATING,
-  SINGLE_LED,
-  TWO_LED,
-  SINGLE_COLOR,
   SINGLE_COLOR_TO_GRADIENT,
   NO_ANIMATION,
   TRANSITION_TO_ATTRACT
@@ -56,17 +51,7 @@ void setup() {
 }
 
 void loop() {
-  processSerialStateData();
-
   switch (currentState) {
-    case RECORDING_COUNTDOWN:
-      animate_gradient_fill(start_r, start_g, start_b, 10, 10, 10, 3000);
-      currentState = RECORDING;
-      break;
-    case RECORDING:
-      //strip.fill(strip.Color(volume, volume, volume));
-      //strip.show();
-      break;
     case ANALYZING:
       theaterChase(strip.Color(255, 255, 255), 500);
       break;
@@ -89,18 +74,6 @@ void loop() {
       break;
     case IDLE:
       pulseBetweenColors(255, 95, 50, 255, 255, 255, 3000);
-      break;
-    case SINGLE_LED:
-      turnOnNLedOfEachRing(1);
-      break;
-    case TWO_LED:
-      turnOnNLedOfEachRing(2);
-      break;
-    case SINGLE_COLOR:
-      strip.fill(strip.Color(0, 0, 0));
-      strip.show();
-      colorWipe(strip.Color(rgb[0], rgb[1], rgb[2]), 50);
-      currentState = NO_ANIMATION;
       break;
     case SINGLE_COLOR_TO_GRADIENT:
       strip.fill(strip.Color(0, 0, 0));
@@ -131,23 +104,10 @@ void processSerialStateData() {
   if (stringComplete) {
     Serial.print(inputString);
 
-    if (inputString.indexOf('z') >= 0) {
-      currentState = SINGLE_LED;
-    } else if (inputString.indexOf('y') >= 0) {
-      currentState = TWO_LED;
-    } else if (inputString.indexOf('a') >= 0) {
+    if (inputString.indexOf('a') >= 0) {
       currentState = ANALYZING;
-    } else if (inputString.indexOf('r') >= 0) {
-      currentState = RECORDING_COUNTDOWN;
     } else if (inputString.indexOf('s') >= 0) {
       currentState = TRANSITION_TO_ATTRACT;
-    } else if (inputString.indexOf('v') >= 0) {
-      String mapping = inputString.substring(1);
-      volume = mapping.toInt();
-      currentState = RECORDING;
-    } else if (inputString.indexOf('c') >= 0) {
-      parseRGBValuesSingleColor(inputString, rgb);
-      currentState = SINGLE_COLOR;
     } else if (inputString.indexOf('g') >= 0) {
       parseRGBValuesSingleColor(inputString, rgb);
       currentState = SINGLE_COLOR_TO_GRADIENT;
@@ -277,18 +237,6 @@ void colorWipe(uint32_t c, uint8_t wait) {
     delay(wait);
   }
 }
-
-// Fill the dots one after the other with a color
-void colorWipeBothRows(uint32_t c, uint8_t wait) {
-
-  for (uint16_t i = 0; i < strip.numPixels()/2; i++) {
-    strip.setPixelColor(i, c);
-    strip.setPixelColor(strip.numPixels()-i, c);
-    strip.show();
-    delay(wait);
-  }
-}
-
 
 void turnOnNLedOfEachRing(int numLEDs) {
   // Define the color (e.g., red)
