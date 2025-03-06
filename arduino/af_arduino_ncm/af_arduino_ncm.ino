@@ -59,7 +59,7 @@ void loop() {
       theaterChase(strip.Color(255, 255, 255), 500);
       break;
     case TRANSITION_TO_SENTIMENT:
-      animate_gradient_fill(start_r, start_g, start_b, 255, 255, 255, 1000);
+      animate_gradient_fill(start_r, start_g, start_b, 100, 100, 100, 1000);
       currentState = IDLE;
       break;
     case ANIMATING:
@@ -76,8 +76,7 @@ void loop() {
       currentState = IDLE;
       break;
     case IDLE:
-      //pulseBetweenColors(0, 0, 255, 255, 0, 0, 3000);
-       strip.fill(strip.Color(0, 0, 255));
+      pulseBetweenColors(255, 95, 50, 100, 100, 100, 3000);
       strip.show();
       break;
     case SINGLE_COLOR_TO_GRADIENT:
@@ -89,7 +88,7 @@ void loop() {
     case NO_ANIMATION:
       break;
     default:
-      pulseBetweenColors(255, 95, 50, 255, 255, 255, 3000);
+      pulseBetweenColors(255, 95, 50, 100, 100, 100, 3000);
       break;
   }
 }

@@ -8,10 +8,10 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "./speech-to-text-key.json";
 // ----------------------------------------------------------------------------------------------
 // OSC
 // ----------------------------------------------------------------------------------------------
-const oscclient = new osc.Client('127.0.0.1', 5150);
-const oscServer = new osc.Server(5000, '127.0.0.1', () => {
-  console.log('OSC Server is listening');
-});
+ const oscclient = new osc.Client('127.0.0.1', 5150);
+ const oscServer = new osc.Server(5000, '127.0.0.1', () => {
+   console.log('OSC Server is listening');
+ });
 
 oscServer.on('message', function (msg) {
   console.log(`Message: `, msg);
@@ -34,6 +34,7 @@ oscServer.on('message', function (msg) {
   }
   
 });
+
 
 // =========================== GOOGLE CLOUD SETTINGS ================================ //
 // The encoding of the audio file, e.g. 'LINEAR16'
@@ -93,7 +94,7 @@ function startRecording() {
       verbose: false,
       recordProgram: 'sox',
       silence: '10.0',
-      device: "Microphone (Realtek High Definition Audio)"
+      device: "Microphone (Realtek(R) Audio)"
     })
   recording
     .stream({verbose: true})
