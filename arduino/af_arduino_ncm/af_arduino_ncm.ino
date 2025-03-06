@@ -5,8 +5,8 @@
 
 #define PIN 10
 #define LEDS_PER_STRIP 60  // Number of LEDs in each ring
-#define NUM_RINGS 5       // Total number of rings
-#define BRIGHTNESS 50     // Set BRIGHTNESS to about 1/5 (max = 255)
+#define NUM_RINGS 5        // Total number of rings
+#define BRIGHTNESS 50      // Set BRIGHTNESS to about 1/5 (max = 255)
 
 // Calculate the total number of LEDs
 #define TOTAL_LED_COUNT (LEDS_PER_STRIP * NUM_RINGS)
@@ -52,9 +52,13 @@ void setup() {
 
 void loop() {
 
-  processSerialStateData(); 
-  
+  processSerialStateData();
+
   switch (currentState) {
+    case IDLE:
+      pulseBetweenColors(255, 95, 50, 100, 100, 100, 3000);
+      strip.show();
+      break;
     case ANALYZING:
       theaterChase(strip.Color(255, 255, 255), 500);
       break;
@@ -68,16 +72,11 @@ void loop() {
         animate_gradient_fill(start_r, start_g, start_b, rgb[0], rgb[1], rgb[2], 1000);
         onTransition = false;
       }
-
       pulseBetweenColors(rgb[0], rgb[1], rgb[2], rgb[3], rgb[4], rgb[5], 2000);
       break;
     case TRANSITION_TO_ATTRACT:
       animate_gradient_fill(start_r, start_g, start_b, 255, 95, 50, 1000);
       currentState = IDLE;
-      break;
-    case IDLE:
-      pulseBetweenColors(255, 95, 50, 100, 100, 100, 3000);
-      strip.show();
       break;
     case SINGLE_COLOR_TO_GRADIENT:
       strip.fill(strip.Color(0, 0, 0));
@@ -86,7 +85,27 @@ void loop() {
       currentState = ANIMATING;
       break;
     case NO_ANIMATION:
-      break;
+      {
+        int fadeSteps = 50;
+        for (int step = 0; step < fadeSteps; step++) {
+          for (int i = 0; i < strip.numPixels(); i++) {
+            uint32_t color = strip.getPixelColor(i);
+            uint8_t r = (color >> 16) & 0xFF;
+            uint8_t g = (color >> 8) & 0xFF;
+            uint8_t b = color & 0xFF;
+
+            // Reduce RGB values gradually
+            r = r * (fadeSteps - step) / fadeSteps;
+            g = g * (fadeSteps - step) / fadeSteps;
+            b = b * (fadeSteps - step) / fadeSteps;
+
+            strip.setPixelColor(i, strip.Color(r, g, b));
+          }
+          strip.show();
+          delay(10);
+        }
+        break;
+      }
     default:
       pulseBetweenColors(255, 95, 50, 100, 100, 100, 3000);
       break;
@@ -115,6 +134,8 @@ void processSerialStateData() {
     } else if (inputString.indexOf('g') >= 0) {
       parseRGBValuesSingleColor(inputString, rgb);
       currentState = SINGLE_COLOR_TO_GRADIENT;
+    } else if (inputString.indexOf('r') >= 0) {
+      currentState = NO_ANIMATION;
     } else {
       parseRGBValues(inputString, rgb);
       onTransition = true;
@@ -160,6 +181,8 @@ void parseRGBValues(const String& inputString, int rgb[6]) {
   }
 }
 
+
+
 void pulseBetweenColors(uint8_t start_r, uint8_t start_g, uint8_t start_b,
                         uint8_t end_r, uint8_t end_g, uint8_t end_b,
                         int duration) {
@@ -168,7 +191,7 @@ void pulseBetweenColors(uint8_t start_r, uint8_t start_g, uint8_t start_b,
 }
 
 void storeColorMix(uint8_t r, uint8_t g, uint8_t b) {
-  start_r = r;
+
   start_g = g;
   start_b = b;
 }
