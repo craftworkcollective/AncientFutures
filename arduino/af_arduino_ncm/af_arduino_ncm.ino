@@ -3,7 +3,7 @@
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
-#define PIN 6
+#define PIN 10
 #define LEDS_PER_STRIP 60  // Number of LEDs in each ring
 #define NUM_RINGS 5       // Total number of rings
 #define BRIGHTNESS 50     // Set BRIGHTNESS to about 1/5 (max = 255)
@@ -51,6 +51,9 @@ void setup() {
 }
 
 void loop() {
+
+  processSerialStateData(); 
+  
   switch (currentState) {
     case ANALYZING:
       theaterChase(strip.Color(255, 255, 255), 500);
@@ -73,12 +76,14 @@ void loop() {
       currentState = IDLE;
       break;
     case IDLE:
-      pulseBetweenColors(255, 95, 50, 255, 255, 255, 3000);
+      //pulseBetweenColors(0, 0, 255, 255, 0, 0, 3000);
+       strip.fill(strip.Color(0, 0, 255));
+      strip.show();
       break;
     case SINGLE_COLOR_TO_GRADIENT:
       strip.fill(strip.Color(0, 0, 0));
       strip.show();
-      colorWipeBothRows(strip.Color(rgb[0], rgb[1], rgb[2]), 30);
+      //colorWipeBothRows(strip.Color(rgb[0], rgb[1], rgb[2]), 30);
       currentState = ANIMATING;
       break;
     case NO_ANIMATION:
@@ -248,7 +253,7 @@ void turnOnNLedOfEachRing(int numLEDs) {
   // Loop through each ring and turn on the first LED
   for (int i = 0; i < NUM_RINGS; i++) {
     for (int j = 0; j < numLEDs; j++)
-      strip.setPixelColor(i * LEDS_PER_RING + j, color);
+      strip.setPixelColor(i * LEDS_PER_STRIP + j, color);
   }
 
   // Show the changes on the strip
