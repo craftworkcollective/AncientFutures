@@ -3,11 +3,11 @@
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
-#define PIN 10
+#define PIN 6
 #define BRIGHTNESS 100  // Set BRIGHTNESS to about 1/5 (max = 255)
 
 // Calculate the total number of LEDs
-#define TOTAL_LED_COUNT 180
+#define TOTAL_LED_COUNT 300
 
 // Declare our NeoPixel strip object
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(TOTAL_LED_COUNT, PIN, NEO_GRB + NEO_KHZ800);
