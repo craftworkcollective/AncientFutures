@@ -22,7 +22,7 @@
 // How many NeoPixels are attached to the Arduino?
 #define LED_COUNT 300
 
-#define BRIGHTNESS 50
+#define BRIGHTNESS 70
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -56,7 +56,7 @@ void setup() {
 
 void loop() {
   // Fill along the length of the strip in various colors...
-  //colorWipe(strip.Color(255,192,203), BRIGHTNESS); // Red
+ // colorWipe(strip.Color(255,192,203), BRIGHTNESS); // Red
   //colorWipe(strip.Color(  0, 255,   0), BRIGHTNESS); // Green
   //colorWipe(strip.Color(  0,   0, 255), BRIGHTNESS); // Blue
 
@@ -74,33 +74,39 @@ void loop() {
 //twoColorGradientHSV(0, 43690, 10); // Red to Blue
 
  //twoColorGradientRGB(strip.Color(255, 0, 0), strip.Color(255,192,203), 20); // Red to Blue
+//255, 95, 50, 255, 255, 255
+twoColorGradientRGB(0, 255, 0,   // Start color: Green
+                    128, 0, 128, // End color: Purple
+                    3000);       // Duration: 5 seconds
 
- twoColorGradientRGB(strip.Color(255, 0, 0), strip.Color(0,0,255), 20); // Red to Blue
-
+twoColorGradientRGB(255, 95, 50, 255, 255, 255, 
+                    3000);       // Duration: 5 seconds
 }
 
-void twoColorGradientRGB(uint32_t color1, uint32_t color2, int wait) {
+void twoColorGradientRGB(uint8_t start_r, uint8_t start_g, uint8_t start_b,
+                          uint8_t end_r, uint8_t end_g, uint8_t end_b,
+                          int duration_ms) {
   const float gamma = 2.2;  // Gamma correction factor
+  int steps = 255;
+  int wait = duration_ms / (2 * steps); // Adjust delay to fit duration
 
-  for (int i = 0; i <= 255; i++) {  // Forward transition
-    float t = i / 255.0;  // Normalize transition step
+  // Gamma-corrected start color
+  float r1 = pow(start_r / 255.0, gamma);
+  float g1 = pow(start_g / 255.0, gamma);
+  float b1 = pow(start_b / 255.0, gamma);
 
-    // Extract and gamma-correct RGB values
-    float r1 = pow(((color1 >> 16) & 0xFF) / 255.0, gamma);
-    float g1 = pow(((color1 >> 8) & 0xFF) / 255.0, gamma);
-    float b1 = pow((color1 & 0xFF) / 255.0, gamma);
+  // Gamma-corrected end color
+  float r2 = pow(end_r / 255.0, gamma);
+  float g2 = pow(end_g / 255.0, gamma);
+  float b2 = pow(end_b / 255.0, gamma);
 
-    float r2 = pow(((color2 >> 16) & 0xFF) / 255.0, gamma);
-    float g2 = pow(((color2 >> 8) & 0xFF) / 255.0, gamma);
-    float b2 = pow((color2 & 0xFF) / 255.0, gamma);
+  for (int i = 0; i <= steps; i++) {  // Forward transition
+    float t = i / float(steps);
+    float r = pow((1 - t) * r1 + t * r2, 1 / gamma) * 255;
+    float g = pow((1 - t) * g1 + t * g2, 1 / gamma) * 255;
+    float b = pow((1 - t) * b1 + t * b2, 1 / gamma) * 255;
 
-    // Interpolate in gamma-corrected space
-    float r = pow((1 - t) * r1 + t * r2, 1 / gamma);
-    float g = pow((1 - t) * g1 + t * g2, 1 / gamma);
-    float b = pow((1 - t) * b1 + t * b2, 1 / gamma);
-
-    uint32_t blendedColor = strip.Color(r * 255, g * 255, b * 255);
-
+    uint32_t blendedColor = strip.Color((uint8_t)r, (uint8_t)g, (uint8_t)b);
     for (int j = 0; j < strip.numPixels(); j++) {
       strip.setPixelColor(j, blendedColor);
     }
@@ -108,23 +114,13 @@ void twoColorGradientRGB(uint32_t color1, uint32_t color2, int wait) {
     delay(wait);
   }
 
-  for (int i = 255; i >= 0; i--) {  // Reverse transition
-    float t = i / 255.0;
+  for (int i = steps; i >= 0; i--) {  // Reverse transition
+    float t = i / float(steps);
+    float r = pow((1 - t) * r1 + t * r2, 1 / gamma) * 255;
+    float g = pow((1 - t) * g1 + t * g2, 1 / gamma) * 255;
+    float b = pow((1 - t) * b1 + t * b2, 1 / gamma) * 255;
 
-    float r1 = pow(((color1 >> 16) & 0xFF) / 255.0, gamma);
-    float g1 = pow(((color1 >> 8) & 0xFF) / 255.0, gamma);
-    float b1 = pow((color1 & 0xFF) / 255.0, gamma);
-
-    float r2 = pow(((color2 >> 16) & 0xFF) / 255.0, gamma);
-    float g2 = pow(((color2 >> 8) & 0xFF) / 255.0, gamma);
-    float b2 = pow((color2 & 0xFF) / 255.0, gamma);
-
-    float r = pow((1 - t) * r1 + t * r2, 1 / gamma);
-    float g = pow((1 - t) * g1 + t * g2, 1 / gamma);
-    float b = pow((1 - t) * b1 + t * b2, 1 / gamma);
-
-    uint32_t blendedColor = strip.Color(r * 255, g * 255, b * 255);
-
+    uint32_t blendedColor = strip.Color((uint8_t)r, (uint8_t)g, (uint8_t)b);
     for (int j = 0; j < strip.numPixels(); j++) {
       strip.setPixelColor(j, blendedColor);
     }

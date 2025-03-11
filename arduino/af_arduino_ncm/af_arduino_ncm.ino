@@ -3,10 +3,10 @@
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
-#define PIN 10
+#define PIN 6
 #define LEDS_PER_STRIP 60  // Number of LEDs in each ring
 #define NUM_RINGS 5        // Total number of rings
-#define BRIGHTNESS 50      // Set BRIGHTNESS to about 1/5 (max = 255)
+#define BRIGHTNESS 70      // Set BRIGHTNESS to about 1/5 (max = 255)
 
 // Calculate the total number of LEDs
 #define TOTAL_LED_COUNT (LEDS_PER_STRIP * NUM_RINGS)

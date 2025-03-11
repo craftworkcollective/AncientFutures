@@ -7,10 +7,10 @@
 #define BRIGHTNESS 100  // Set BRIGHTNESS to about 1/5 (max = 255)
 
 // Calculate the total number of LEDs
-#define TOTAL_LED_COUNT 300
+#define TOTAL_LED_COUNT 180
 
 // Declare our NeoPixel strip object
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(TOTAL_LED_COUNT, PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(TOTAL_LED_COUNT, PIN, NEO_GRB + NEO_KHZ800);
 
 // Color storage
 uint8_t start_r = 0;
